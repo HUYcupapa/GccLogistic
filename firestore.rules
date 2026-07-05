@@ -1,0 +1,260 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // 1. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Reusable Global Helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerified() {
+      return isSignedIn() && (request.auth.token.email_verified == true || request.auth.token.firebase.sign_in_provider == 'google.com');
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Validation helper for UserProfile (The "Anti-Update-Gap" Schema Guard)
+    function isValidUserProfile(data) {
+      return data.keys().hasAll(['uid', 'displayName', 'email', 'role', 'companyName'])
+        && data.uid is string && data.uid.size() <= 128
+        && data.displayName is string && data.displayName.size() <= 200
+        && data.email is string && data.email.size() <= 200
+        && data.role is string && data.role in ['buyer', 'shipper', 'driver', 'admin', 'control', 'maps']
+        && data.companyName is string && data.companyName.size() <= 200;
+    }
+
+    // Validation helper for ColdChainOrder (The "Anti-Update-Gap" Schema Guard)
+    function isValidColdChainOrder(data) {
+      return data.keys().hasAll(['id', 'productType', 'productName', 'quantityKg', 'palletsCount', 'totalPriceAED', 'pricePerKgAED', 'incoterm', 'status', 'pickupDate', 'deliveryDate', 'createdAt', 'buyerName', 'shipperName', 'sensorId'])
+        && data.keys().size() >= 15 && data.keys().size() <= 22
+        && data.id is string && data.id.size() <= 128
+        && data.productType is string && data.productType.size() <= 100
+        && data.productName is string && data.productName.size() <= 200
+        && data.quantityKg is number && data.quantityKg >= 0
+        && data.palletsCount is number && data.palletsCount >= 0
+        && data.totalPriceAED is number && data.totalPriceAED >= 0
+        && data.pricePerKgAED is number && data.pricePerKgAED >= 0
+        && data.incoterm is string && data.incoterm.size() <= 10
+        && data.status is string && data.status in ['pending', 'approved', 'in_transit', 'delivered', 'claimed', 'closed', 'shipped', 'breached']
+        && data.pickupDate is string && data.pickupDate.size() <= 50
+        && data.deliveryDate is string && data.deliveryDate.size() <= 50
+        && data.createdAt is string && data.createdAt.size() <= 50
+        && data.buyerName is string && data.buyerName.size() <= 200
+        && data.shipperName is string && data.shipperName.size() <= 200
+        && data.sensorId is string && data.sensorId.size() <= 100
+        && (!data.keys().hasAny(['driverName']) || data.driverName is string)
+        && (!data.keys().hasAny(['vehiclePlate']) || data.vehiclePlate is string)
+        && (!data.keys().hasAny(['etaMinutes']) || data.etaMinutes is number);
+    }
+
+    // Validation helper for DamageClaim (The "Anti-Update-Gap" Schema Guard)
+    function isValidDamageClaim(data) {
+      return data.keys().hasAll(['orderId', 'lossPercent', 'imageName', 'timestamp', 'verifiedStatus'])
+        && data.keys().size() >= 5 && data.keys().size() <= 10
+        && data.orderId is string && data.orderId.size() <= 128
+        && data.lossPercent is number && data.lossPercent >= 0 && data.lossPercent <= 100
+        && data.imageName is string && data.imageName.size() <= 256
+        && data.timestamp is string && data.timestamp.size() <= 50
+        && data.verifiedStatus is string && data.verifiedStatus in ['YOLO_AI_AUTO_CONFIRMED', 'FORGED_SYSTEM_STATUS', 'PENDING'];
+    }
+
+    // Validation helper for RouteOptimization (The "Anti-Update-Gap" Schema Guard)
+    function isValidRouteOptimization(data) {
+      return data.keys().hasAll(['id', 'startNodeId', 'endNodeId', 'startNodeName', 'endNodeName', 'distanceKm', 'durationMins', 'fuelLiters', 'co2Kg', 'safetyScore', 'noiseFog', 'noiseSandstorm', 'noiseHeatwave', 'noiseGridlock', 'cargoWeightKg', 'timestamp', 'userId'])
+        && data.keys().size() == 17
+        && data.id is string && data.id.size() <= 128
+        && data.startNodeId is string && data.startNodeId.size() <= 100
+        && data.endNodeId is string && data.endNodeId.size() <= 100
+        && data.startNodeName is string && data.startNodeName.size() <= 200
+        && data.endNodeName is string && data.endNodeName.size() <= 200
+        && data.distanceKm is number && data.distanceKm >= 0
+        && data.durationMins is number && data.durationMins >= 0
+        && data.fuelLiters is number && data.fuelLiters >= 0
+        && data.co2Kg is number && data.co2Kg >= 0
+        && data.safetyScore is number && data.safetyScore >= 0 && data.safetyScore <= 100
+        && data.noiseFog is bool
+        && data.noiseSandstorm is bool
+        && data.noiseHeatwave is bool
+        && data.noiseGridlock is bool
+        && data.cargoWeightKg is number && data.cargoWeightKg >= 0
+        && data.timestamp is string && data.timestamp.size() <= 100
+        && data.userId is string && data.userId.size() <= 128;
+    }
+
+    // Validation helper for YoloScan (The "Anti-Update-Gap" Schema Guard)
+    function isValidYoloScan(data) {
+      return data.keys().hasAll(['id', 'fruitType', 'state', 'confidence', 'outcome', 'accuracy', 'imageUrl', 'scannedBy', 'timestamp'])
+        && data.keys().size() == 9
+        && data.id is string && data.id.size() <= 128
+        && data.fruitType is string && data.fruitType.size() <= 100
+        && data.state is string && data.state.size() <= 100
+        && data.confidence is number && data.confidence >= 0 && data.confidence <= 1
+        && data.outcome is string && data.outcome in ['APPROVED', 'HOLD', 'REJECT']
+        && data.accuracy is string && data.accuracy.size() <= 20
+        && data.imageUrl is string && data.imageUrl.size() <= 2000
+        && data.scannedBy is string && data.scannedBy.size() <= 200
+        && data.timestamp is string && data.timestamp.size() <= 100;
+    }
+
+    // Validation helper for Product (The "Anti-Update-Gap" Schema Guard)
+    function isValidProduct(data) {
+      return data.keys().hasAll(['id', 'name', 'category', 'pricePerKgAED', 'stockKg', 'origin'])
+        && data.keys().size() >= 6 && data.keys().size() <= 8
+        && data.id is string && data.id.size() <= 128
+        && data.name is string && data.name.size() <= 200
+        && data.category is string && data.category in ['tomato', 'pepper', 'other']
+        && data.pricePerKgAED is number && data.pricePerKgAED >= 0
+        && data.stockKg is number && data.stockKg >= 0
+        && data.origin is string && data.origin.size() <= 200
+        && (!data.keys().hasAny(['description']) || data.description is string);
+    }
+
+    // Validation helper for IoTSensor (The "Anti-Update-Gap" Schema Guard)
+    function isValidIoTSensor(data) {
+      return data.keys().hasAll(['id', 'operatorName', 'vehicleId', 'batteryLevel', 'status', 'lastPing', 'temperature', 'humidity', 'doorStatus', 'sensorType'])
+        && data.keys().size() >= 10 && data.keys().size() <= 12
+        && data.id is string && data.id.size() <= 128
+        && data.operatorName is string && data.operatorName.size() <= 200
+        && data.vehicleId is string && data.vehicleId.size() <= 100
+        && data.batteryLevel is number && data.batteryLevel >= 0 && data.batteryLevel <= 100
+        && data.status is string && data.status in ['optimal', 'warning', 'breach', 'disconnected']
+        && data.lastPing is string && data.lastPing.size() <= 100
+        && data.temperature is number
+        && data.humidity is number && data.humidity >= 0 && data.humidity <= 100
+        && data.doorStatus is string && data.doorStatus in ['open', 'closed']
+        && data.sensorType is string && data.sensorType in ['BLE', '4G', 'RS485'];
+    }
+
+    // Validation helper for ComplianceLedgerExport (The "Anti-Update-Gap" Schema Guard)
+    function isValidComplianceLedgerExport(data) {
+      return data.keys().hasAll(['id', 'exportedBy', 'timestamp', 'ordersCount', 'productsCount', 'sensorsCount', 'serializedSummary'])
+        && data.keys().size() == 7
+        && data.id is string && data.id.size() <= 128
+        && data.exportedBy is string && data.exportedBy.size() <= 200
+        && data.timestamp is string && data.timestamp.size() <= 100
+        && data.ordersCount is number && data.ordersCount >= 0
+        && data.productsCount is number && data.productsCount >= 0
+        && data.sensorsCount is number && data.sensorsCount >= 0
+        && data.serializedSummary is string && data.serializedSummary.size() <= 100000;
+    }
+
+    // Validation helper for Bill (The "Anti-Update-Gap" Schema Guard)
+    function isValidBill(data) {
+      return data.keys().hasAll(['orderSummary', 'productCode', 'totalBill', 'timestamp', 'buyerName'])
+        && data.productCode is string
+        && data.timestamp is string
+        && data.buyerName is string;
+    }
+
+    // 2. Match Rules for UserProfiles (PII and role protection)
+    match /User/{userId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn()
+        && userId == request.auth.uid
+        && isValidUserProfile(incoming())
+        && incoming().uid == request.auth.uid;
+      allow update: if isSignedIn()
+        && userId == request.auth.uid
+        && isValidUserProfile(incoming())
+        && incoming().uid == existing().uid
+        && incoming().role == existing().role; // Prevent self-promotions
+      allow delete: if false;
+    }
+
+    // 3. Match Rules for ColdChainOrder
+    match /orders/{orderId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn()
+        && isValidId(orderId)
+        && isValidColdChainOrder(incoming())
+        && incoming().id == orderId;
+      allow update: if isSignedIn()
+        && isValidId(orderId)
+        && isValidColdChainOrder(incoming())
+        && incoming().id == existing().id;
+      allow delete: if isSignedIn()
+        && isValidId(orderId);
+    }
+
+    // 4. Match Rules for DamageClaim
+    match /claims/{claimId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn()
+        && isValidDamageClaim(incoming());
+      allow update: if isSignedIn()
+        && isValidDamageClaim(incoming())
+        && incoming().diff(existing()).affectedKeys().hasOnly(['verifiedStatus']);
+      allow delete: if false;
+    }
+
+    // 5. Match Rules for RouteOptimization
+    match /routes/{routeId} {
+      allow read: if true;
+      allow create: if isValidId(routeId)
+        && isValidRouteOptimization(incoming())
+        && incoming().id == routeId
+        && (request.auth == null ? incoming().userId == 'anonymous' : incoming().userId == request.auth.uid);
+      allow update, delete: if false;
+    }
+
+    // 6. Match Rules for YoloScan (Saves scans by any user or terminal)
+    match /yolo_scans/{scanId} {
+      allow read, create: if isValidId(scanId)
+        && isValidYoloScan(incoming())
+        && incoming().id == scanId;
+      allow update, delete: if false;
+    }
+
+    // 7. Match Rules for Products
+    match /products/{productId} {
+      allow read: if true;
+      allow create, update: if isSignedIn()
+        && isValidId(productId)
+        && isValidProduct(incoming())
+        && incoming().id == productId;
+      allow delete: if isSignedIn()
+        && isValidId(productId);
+    }
+
+    // 8. Match Rules for IoT Sensors
+    match /sensors/{sensorId} {
+      allow read: if true;
+      allow create, update: if isSignedIn()
+        && isValidId(sensorId)
+        && isValidIoTSensor(incoming())
+        && incoming().id == sensorId;
+      allow delete: if isSignedIn()
+        && isValidId(sensorId);
+    }
+
+    // 9. Match Rules for Compliance Ledger Exports
+    match /compliance_exports/{exportId} {
+      allow read: if true;
+      allow create: if isValidId(exportId)
+        && isValidComplianceLedgerExport(incoming())
+        && incoming().id == exportId;
+      allow update, delete: if false;
+    }
+    // 10. Match Rules for Bill
+    match /Bill/{billId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isValidBill(incoming());
+      allow update, delete: if false;
+    }
+  }
+}

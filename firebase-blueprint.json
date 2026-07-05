@@ -1,0 +1,177 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile with roles",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "displayName": { "type": "string" },
+        "email": { "type": "string" },
+        "role": { "type": "string" },
+        "companyName": { "type": "string" }
+      },
+      "required": ["uid", "displayName", "email", "role", "companyName"]
+    },
+    "ColdChainOrder": {
+      "title": "ColdChainOrder",
+      "description": "Smart contracts / trade orders between buyers and shippers",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "productType": { "type": "string" },
+        "productName": { "type": "string" },
+        "quantityKg": { "type": "number" },
+        "palletsCount": { "type": "number" },
+        "totalPriceAED": { "type": "number" },
+        "pricePerKgAED": { "type": "number" },
+        "incoterm": { "type": "string" },
+        "status": { "type": "string" },
+        "pickupDate": { "type": "string" },
+        "deliveryDate": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "buyerName": { "type": "string" },
+        "shipperName": { "type": "string" },
+        "sensorId": { "type": "string" }
+      },
+      "required": ["id", "productType", "productName", "quantityKg", "palletsCount", "totalPriceAED", "pricePerKgAED", "incoterm", "status", "pickupDate", "deliveryDate", "createdAt", "buyerName", "shipperName", "sensorId"]
+    },
+    "DamageClaim": {
+      "title": "DamageClaim",
+      "description": "Food quality damage claims verified with YOLO-AI model",
+      "type": "object",
+      "properties": {
+        "orderId": { "type": "string" },
+        "lossPercent": { "type": "number" },
+        "imageName": { "type": "string" },
+        "timestamp": { "type": "string" },
+        "verifiedStatus": { "type": "string" }
+      },
+      "required": ["orderId", "lossPercent", "imageName", "timestamp", "verifiedStatus"]
+    },
+    "RouteOptimization": {
+      "title": "RouteOptimization",
+      "description": "Saves computed routing scenarios with active climate or traffic noise hazards.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "startNodeId": { "type": "string" },
+        "endNodeId": { "type": "string" },
+        "startNodeName": { "type": "string" },
+        "endNodeName": { "type": "string" },
+        "distanceKm": { "type": "number" },
+        "durationMins": { "type": "number" },
+        "fuelLiters": { "type": "number" },
+        "co2Kg": { "type": "number" },
+        "safetyScore": { "type": "number" },
+        "noiseFog": { "type": "boolean" },
+        "noiseSandstorm": { "type": "boolean" },
+        "noiseHeatwave": { "type": "boolean" },
+        "noiseGridlock": { "type": "boolean" },
+        "cargoWeightKg": { "type": "number" },
+        "timestamp": { "type": "string" },
+        "userId": { "type": "string" }
+      },
+      "required": ["id", "startNodeId", "endNodeId", "startNodeName", "endNodeName", "distanceKm", "durationMins", "fuelLiters", "co2Kg", "safetyScore", "noiseFog", "noiseSandstorm", "noiseHeatwave", "noiseGridlock", "cargoWeightKg", "timestamp", "userId"]
+    },
+    "YoloScan": {
+      "title": "YoloScan",
+      "description": "Saves quality scanning results processed by YOLO model",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "fruitType": { "type": "string" },
+        "state": { "type": "string" },
+        "confidence": { "type": "number" },
+        "outcome": { "type": "string" },
+        "accuracy": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "scannedBy": { "type": "string" },
+        "timestamp": { "type": "string" }
+      },
+      "required": ["id", "fruitType", "state", "confidence", "outcome", "accuracy", "imageUrl", "scannedBy", "timestamp"]
+    },
+    "Product": {
+      "title": "Product",
+      "description": "Cold-chain eligible agricultural products managed by admin",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "category": { "type": "string" },
+        "pricePerKgAED": { "type": "number" },
+        "stockKg": { "type": "number" },
+        "origin": { "type": "string" },
+        "description": { "type": "string" }
+      },
+      "required": ["id", "name", "category", "pricePerKgAED", "stockKg", "origin"]
+    },
+    "IoTSensor": {
+      "title": "IoTSensor",
+      "description": "Reefer vehicle transponder monitoring device",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "operatorName": { "type": "string" },
+        "vehicleId": { "type": "string" },
+        "batteryLevel": { "type": "number" },
+        "status": { "type": "string" },
+        "lastPing": { "type": "string" },
+        "temperature": { "type": "number" },
+        "humidity": { "type": "number" },
+        "doorStatus": { "type": "string" },
+        "sensorType": { "type": "string" }
+      },
+      "required": ["id", "operatorName", "vehicleId", "batteryLevel", "status", "lastPing", "temperature", "humidity", "doorStatus", "sensorType"]
+    },
+    "ComplianceLedgerExport": {
+      "title": "ComplianceLedgerExport",
+      "description": "Historical record of exported compliance data ledgers",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "exportedBy": { "type": "string" },
+        "timestamp": { "type": "string" },
+        "ordersCount": { "type": "number" },
+        "productsCount": { "type": "number" },
+        "sensorsCount": { "type": "number" },
+        "serializedSummary": { "type": "string" }
+      },
+      "required": ["id", "exportedBy", "timestamp", "ordersCount", "productsCount", "sensorsCount", "serializedSummary"]
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": "UserProfile",
+      "description": "Saves the profile and active role of connected users."
+    },
+    "orders/{orderId}": {
+      "schema": "ColdChainOrder",
+      "description": "Trade shipments tracked on the logistics dashboard."
+    },
+    "claims/{claimId}": {
+      "schema": "DamageClaim",
+      "description": "Active cargo deterioration claims registered by buyers."
+    },
+    "routes/{routeId}": {
+      "schema": "RouteOptimization",
+      "description": "Saves optimization search results for simulation telemetry logs."
+    },
+    "yolo_scans/{scanId}": {
+      "schema": "YoloScan",
+      "description": "Saves quality scanning results processed by YOLO model and server-side Gemini SDK."
+    },
+    "products/{productId}": {
+      "schema": "Product",
+      "description": "Catalog of import-approved cold chain agricultural commodities."
+    },
+    "sensors/{sensorId}": {
+      "schema": "IoTSensor",
+      "description": "Active IoT telematics transponder tracking devices."
+    },
+    "compliance_exports/{exportId}": {
+      "schema": "ComplianceLedgerExport",
+      "description": "Historical log of system compliance ledger CSV exports."
+    }
+  }
+}

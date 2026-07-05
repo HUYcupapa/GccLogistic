@@ -1,0 +1,6 @@
+{
+  "firestore": {
+    "database": "ai-studio-gcccoldchainlogi-7b33314d-755c-4a2c-89af-b6f21e392868",
+    "rules": "firestore.rules"
+  }
+}

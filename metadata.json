@@ -1,0 +1,8 @@
+{
+  "name": "Remix: GCC Cold Chain Logistics Platform",
+  "description": "Smart cold chain B2B logistics platform for exporting tomatoes and peppers from China to UAE (Jebel Ali Port) featuring Dijkstra route optimization, IoT sensor telemetry, adaptive temperature warning alerts, and YOLO AI-based decay scanner.",
+  "requestFramePermissions": ["geolocation"],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

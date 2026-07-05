@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>My Google AI Studio App</title>
+    <script>
+      window.addEventListener('error', function(e) {
+        var msg = e.message || '';
+        if (msg.includes('Script error.') || msg.toLowerCase().includes('permission denied') || msg.toLowerCase().includes('google maps')) {
+          console.warn('Suppressed third-party script/permission error:', msg);
+          e.preventDefault();
+          e.stopPropagation();
+        }
+      }, true);
+      window.addEventListener('unhandledrejection', function(e) {
+        var reasonMsg = (e.reason && e.reason.message) || String(e.reason || '');
+        if (reasonMsg.toLowerCase().includes('permission denied') || reasonMsg.toLowerCase().includes('missing or insufficient permissions') || reasonMsg.toLowerCase().includes('script error')) {
+          console.warn('Suppressed third-party unhandled rejection:', reasonMsg);
+          e.preventDefault();
+          e.stopPropagation();
+        }
+      }, true);
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+
