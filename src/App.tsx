@@ -7,7 +7,7 @@ import {
 
 import { ColdChainOrder, IoTSensor, UserRole, WeatherData, FruitScanResult, Product } from './types';
 import { INITIAL_ORDERS, INITIAL_SENSORS, UAE_WEATHER, INITIAL_PRODUCTS } from './data';
-import { db, auth, googleProvider, signInWithPopup, signOut, OperationType, handleFirestoreError } from './firebase';
+import { db, auth, googleProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, OperationType, handleFirestoreError } from './firebase';
 import { collection, doc, setDoc, getDocs, onSnapshot, query, addDoc } from 'firebase/firestore';
 
 import BuyerPortal from './components/BuyerPortal';
@@ -161,8 +161,31 @@ export default function App() {
         setCurrentUser(null);
       }
     });
+
+    // Handle redirect result
+    getRedirectResult(auth).then(async (result) => {
+      if (result?.user) {
+        setCurrentUser(result.user);
+        const userRef = doc(db, 'User', result.user.uid);
+        try {
+          await setDoc(userRef, {
+            uid: result.user.uid,
+            displayName: result.user.displayName || 'Google User',
+            email: result.user.email || '',
+            role: activeRole,
+            companyName: activeRole === 'buyer' ? 'Al-Jamil Markets UAE' : 'China Cargo Co.',
+            lastLogin: new Date().toISOString()
+          }, { merge: true });
+        } catch (err) {
+          handleFirestoreError(err, OperationType.WRITE, `User/${result.user.uid}`);
+        }
+      }
+    }).catch(err => {
+      console.error("Redirect login error: ", err);
+    });
+
     return () => unsubscribeAuth();
-  }, []);
+  }, [activeRole]);
 
   const handleGoogleLogin = async () => {
     try {
@@ -182,8 +205,17 @@ export default function App() {
       } catch (err) {
         handleFirestoreError(err, OperationType.WRITE, `User/${result.user.uid}`);
       }
-    } catch (err) {
-      console.error("Login failed: ", err);
+    } catch (err: any) {
+      console.error("Popup login failed: ", err);
+      // If popup is blocked or fails on mobile/Vercel, fallback to redirect
+      if (err.code === 'auth/popup-blocked' || err.code === 'auth/cancelled-popup-request' || err.code === 'auth/popup-closed-by-user') {
+         await signInWithRedirect(auth, googleProvider);
+      } else if (err.code === 'auth/unauthorized-domain') {
+         alert("Login failed: Unauthorized domain. Please add this Vercel domain to your Firebase Authentication Authorized Domains list.");
+      } else {
+         // Generic fallback to redirect for other issues (often mobile browser related)
+         await signInWithRedirect(auth, googleProvider);
+      }
     }
   };
 
